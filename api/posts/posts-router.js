@@ -1,9 +1,9 @@
 // implement your posts router here
 const express = require('express')
-const Post = require('./posts-model.js')
 const router = express.Router()
+const Post = require('./posts-model.js')
 
-router.get('/', (req, res) => {
+router.get('/api/posts/', (req, res) => {
   Post.find(req.query)
     .then(posts => {
       res.status(200).json(posts)
@@ -16,7 +16,7 @@ router.get('/', (req, res) => {
     })
 })
 
-router.get('/:id', (req, res) => {
+router.get('/api/posts/:id', (req, res) => {
   Post.findById(req.params.id)
     .then(posts => {
       if (posts) {
@@ -33,8 +33,8 @@ router.get('/:id', (req, res) => {
     })
 })
 
-router.post('/', (req, res) => {
-  Post.add(req.body)
+router.post('/api/posts/', (req, res) => {
+  Post.insert(req.body)
     .then(posts => {
       res.status(201).json(posts)
     })
@@ -46,7 +46,7 @@ router.post('/', (req, res) => {
     })
 })
 
-router.delete('/:id', (req, res) => {
+router.delete('/api/posts/:id', (req, res) => {
   Post.remove(req.params.id)
     .then(count => {
       if (count > 0) {
@@ -63,7 +63,7 @@ router.delete('/:id', (req, res) => {
     })
 })
 
-router.put('/:id', (req, res) => {
+router.put('/api/posts/:id', (req, res) => {
   const changes = req.body
   Post.update(req.params.id, changes)
     .then(adopter => {
@@ -76,12 +76,12 @@ router.put('/:id', (req, res) => {
     .catch(error => {
       console.log(error)
       res.status(500).json({
-        message: 'Error updating the adopter',
+        message: 'The post information could not be modified',
       })
     })
 })
 
-router.get('/', (req, res) => {
+router.get('/api/posts/:id/comments', (req, res) => {
   Post.find(req.query)
     .then(posts => {
       res.status(200).json(posts)
