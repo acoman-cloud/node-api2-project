@@ -1,85 +1,112 @@
 // implement your posts router here
 const express = require('express')
+const Post = require('./posts-model.js')
 
 const router = express.Router()
-const Post = require('./posts-model.js')
 
 router.get('/', (req, res) => {
   Post.find(req.query)
     .then(posts => {
-      res.status(200).json(posts)
+      res.json(posts)
     })
     .catch(error => {
-      console.log(error)
       res.status(500).json({
         message: 'The posts information could not be retrieved',
+        err: error.message
       })
     })
 })
 
-router.get('/:id', (req, res) => {
-  Post.findById(req.params.id)
-    .then(posts => {
-      if (posts) {
-        res.status(200).json(Post)
-      } else {
-        res.status(404).json({ message: 'The post with the specified ID does not exist' })
-      }
-    })
-    .catch(error => {
-      console.log(error)
-      res.status(500).json({
+router.get('/:id', async (req, res) => {
+  try{
+    const post = await Post.findById(req.params.id)
+    if(!post){
+      res.status(404).json({message: 'The post with the specified ID does not exist'})
+    } else {
+      res.json(post)
+    }
+  } catch (err) {
+    res.status(500).json({
         message: 'The post information could not be retrieved',
+        err: err.message
       })
-    })
+  }
 })
 
 router.post('/', (req, res) => {
-  Post.insert(req.body)
-    .then(posts => {
-      res.status(201).json(posts)
+  const {title, contents} = req.body;
+  if (!title || !contents) {
+    res.status(400).json({
+      message: "Please provide title and contents for the post"
     })
-    .catch(error => {
-      console.log(error)
-      res.status(500).json({
-        message: 'The post could not be created',
+  }else{
+    Post.insert({title, contents})
+      .then(({ id }) =>{
+        return Post.findById(id)
       })
-    })
+      .then(post=>{
+        res.status(201).json(post)
+      })
+      .catch(err=>{
+        res.status(500).json({
+          message: 'There was an error while saving the post to the database',
+          err: err.message
+        })
+      })
+  }
 })
 
-router.delete('/:id', (req, res) => {
-  Post.remove(req.params.id)
-    .then(count => {
-      if (count > 0) {
-        res.status(200).json({ message: 'The post has been nuked' })
-      } else {
-        res.status(404).json({ message: 'The post could not be found' })
-      }
+router.delete('/:id', async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id)
+    if(!post){
+      res.status(404).json({message: "The post with the specified ID does not exist"})
+    } else {
+      const deletedPosts = await Post.remove(req.params.id)
+      res.json(post)
+    }
+  } catch (err) {
+    res.status(500).json({
+      message: 'The post could not be removed',
+      err: err.message
     })
-    .catch(error => {
-      console.log(error)
-      res.status(500).json({
-        message: 'Error removing the post',
-      })
-    })
+  }
 })
 
 router.put('/:id', (req, res) => {
-  const changes = req.body
-  Post.update(req.params.id, changes)
-    .then(post => {
-      if (post) {
-        res.status(200).json(post)
-      } else {
-        res.status(404).json({ message: 'The post with the specified ID does not exist' })
-      }
+  const {title, contents} = req.body;
+  if (!title || !contents) {
+    res.status(400).json({
+      message: "Please provide title and contents for the post"
     })
-    .catch(error => {
-      console.log(error)
-      res.status(500).json({
-        message: 'The post information could not be modified',
+  }else {
+    Post.findById(req.params.id)
+      .then(stuff=>{
+        if(!stuff){
+          res.status(404).json({
+            message: 'The post with the specified ID does not exist'
+          })
+        } else {
+          return Post.update(req.params.id, req.body)
+        }
       })
-    })
+      .then(data =>{
+        if(data){
+          return Post.findById(req.params.id)
+        }
+      })
+      .then( post =>{
+        if(post){
+          res.json(post)
+        }
+      })
+      .catch(err=>{
+        res.status(500).json({
+          message: 'The post information could not be modified',
+          err: err.message
+        })
+      })
+  }
 })
 
 router.get('/:id/comments', (req, res) => {
